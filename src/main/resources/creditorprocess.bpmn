@@ -83,7 +83,6 @@
     <bpmn:laneSet id="LaneSet_1u5loal">
       <bpmn:lane id="SekretariatLane" name="Sekretariat">
         <bpmn:flowNodeRef>RechnungErfasstStartEvent</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>TempActivity</bpmn:flowNodeRef>
       </bpmn:lane>
       <bpmn:lane id="KostenstellenleitungLane" name="Kostenstellenleitung">
         <bpmn:flowNodeRef>RechnungMateriellPrufenTask</bpmn:flowNodeRef>
@@ -106,11 +105,11 @@
         <bpmn:flowNodeRef>RechnungAutomatischFormellPrufenTask</bpmn:flowNodeRef>
       </bpmn:lane>
       <bpmn:lane id="KreditorenbuchhaltungLane" name="Kreditorenbuchhaltung">
-        <bpmn:flowNodeRef>RechnungFormellPrufenTask</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Gateway_10ld1xx</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>RechnungFormellPrufenTask</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
-    <bpmn:startEvent id="RechnungErfasstStartEvent" name="Rechnung erfasst">
+    <bpmn:startEvent id="RechnungErfasstStartEvent" name="Rechnung erfasst" camunda:asyncAfter="true">
       <bpmn:documentation>Rechnungsdaten:
 - Rechnungsnummer (invoiceNr)
 - Rechnungsdatum (invoiceDate)
@@ -120,16 +119,18 @@
 - Rechnungsbetrag (invoiceAmount)
 
 PDF per FileUpload (invoiceFile)</bpmn:documentation>
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="invoiceNr" label="Rechnungsnummer" type="long" />
+          <camunda:formField id="invoiceDate" label="Rechnungsdatum" type="date" />
+          <camunda:formField id="dueDate" label="Fälligkeitsdatum" type="date" />
+          <camunda:formField id="creditorName" label="Lieferantenbezeichnung" type="string" />
+          <camunda:formField id="referenceNr" label="Referenznummer" type="long" />
+          <camunda:formField id="invoiceAmount" label="Rechnungsbetrag" type="long" />
+        </camunda:formData>
+      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1y33xl3</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:task id="RechnungMateriellPrufenTask" name="Rechnung materiell prüfen">
-      <bpmn:documentation>Aufgabe geht an den Benutzer mit dem Kürzel in costCenterMgr. Dieser prüft anhand der Rechnungsdatei, ob er alle aufgeführten Positionen in ausreichender Qualität erhalten hat.
-
-
-Das Prüfergebnis (positiv oder negativ) wird in der Variable materialCheckResult (true/false) gespeichert. Zudem wird in der Variable materialCheckComments beschrieben, was nicht in Ordnung sei.</bpmn:documentation>
-      <bpmn:incoming>CHF100SequenceFlow</bpmn:incoming>
-      <bpmn:outgoing>Flow_1hegwq0</bpmn:outgoing>
-    </bpmn:task>
     <bpmn:exclusiveGateway id="ZugehorigeBestellungGefundenGateway" name="Zugehörige Bestellung gefunden?">
       <bpmn:incoming>Flow_0tbmtn1</bpmn:incoming>
       <bpmn:outgoing>JaSequenceFlow</bpmn:outgoing>
@@ -182,21 +183,12 @@ Das Prüfergebnis (positiv oder negativ) wird in der Variable materialCheckResul
       <bpmn:incoming>CHF100SequenceFlow1</bpmn:incoming>
       <bpmn:outgoing>Flow_1yye4ye</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:task id="RechnungFormellPrufenTask" name="Rechnung formell prüfen">
-      <bpmn:documentation>Mitarbeiter wird händisch im ERP nach einer passenden Bestellung suchen. Falls er keine findet, wird er z.B. versuchen, intern herauszufinden, wer der Auslöser dieser Rechnung ist. Falls auch dies nicht gelingt oder andere formale Fehler in der Rechnung sind (z.B. falsche MwSt.), wird er die Rechnung ablehnen.
-
-Das Prüfergebnis (positiv oder negativ) wird in der Variable formalCheckResult (true/false) gespeichert. Zudem wird in der Variable formalCheckComments beschrieben, was nicht in Ordnung sei.
-
-Falls das Kostenstellenleiter-Kürzel noch fehlt (keine passende Bestellung), muss dieses von Hand gesetzt werden (costCenterMgr).</bpmn:documentation>
-      <bpmn:incoming>Flow_1cneye0</bpmn:incoming>
-      <bpmn:outgoing>Flow_00p9c7f</bpmn:outgoing>
-    </bpmn:task>
     <bpmn:exclusiveGateway id="Gateway_10ld1xx">
       <bpmn:incoming>NegativSequenceFlow</bpmn:incoming>
       <bpmn:incoming>NeinSequenceFlow</bpmn:incoming>
       <bpmn:outgoing>Flow_1cneye0</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="Flow_1y33xl3" sourceRef="RechnungErfasstStartEvent" targetRef="TempActivity" />
+    <bpmn:sequenceFlow id="Flow_1y33xl3" sourceRef="RechnungErfasstStartEvent" targetRef="DatenVonZugehorigerBestellungAuslesenTask" />
     <bpmn:sequenceFlow id="NegativSequenceFlow" name="Negativ" sourceRef="AutomatischesPrufergebnisGateway" targetRef="Gateway_10ld1xx">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${!formalCheckResult}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
@@ -253,16 +245,6 @@ Falls das Kostenstellenleiter-Kürzel noch fehlt (keine passende Bestellung), mu
       <bpmn:incoming>NegativSequenceFlow2</bpmn:incoming>
       <bpmn:outgoing>Flow_0eafodb</bpmn:outgoing>
     </bpmn:task>
-    <bpmn:sequenceFlow id="Flow_1aps01a" sourceRef="TempActivity" targetRef="DatenVonZugehorigerBestellungAuslesenTask" />
-    <bpmn:task id="TempActivity" name="TEMPORÄR: Prozess-variablen statisch setzen">
-      <bpmn:extensionElements>
-        <camunda:inputOutput>
-          <camunda:outputParameter name="invoiceAmount">${80}</camunda:outputParameter>
-        </camunda:inputOutput>
-      </bpmn:extensionElements>
-      <bpmn:incoming>Flow_1y33xl3</bpmn:incoming>
-      <bpmn:outgoing>Flow_1aps01a</bpmn:outgoing>
-    </bpmn:task>
     <bpmn:task id="DatenVonZugehorigerBestellungAuslesenTask" name="Daten von zugehöriger Bestellung auslesen">
       <bpmn:documentation>Via REST API zum gemockten ERP. Suche über Referenznummer (referenceNr). Ob eine Bestellung gefunden wurde oder nicht, in Variable orderFound (true/false) ausgeben.
 
@@ -280,7 +262,7 @@ Lieferantendaten:
           <camunda:outputParameter name="orderAmount">${80}</camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_1aps01a</bpmn:incoming>
+      <bpmn:incoming>Flow_1y33xl3</bpmn:incoming>
       <bpmn:outgoing>Flow_0tbmtn1</bpmn:outgoing>
     </bpmn:task>
     <bpmn:scriptTask id="RechnungAutomatischFormellPrufenTask" name="Rechnung automatisch formell prüfen" scriptFormat="JavaScript" camunda:resultVariable="formalCheckResult">
@@ -299,6 +281,36 @@ if(invoiceAmount &lt; 100 &amp;&amp; invoiceAmount === orderAmount){
  result = true;
 }</bpmn:script>
     </bpmn:scriptTask>
+    <bpmn:userTask id="RechnungFormellPrufenTask" name="Rechnung formell prüfen" camunda:asyncAfter="true" camunda:candidateGroups="kreditorenbuchhaltung">
+      <bpmn:documentation>Mitarbeiter wird händisch im ERP nach einer passenden Bestellung suchen. Falls er keine findet, wird er z.B. versuchen, intern herauszufinden, wer der Auslöser dieser Rechnung ist. Falls auch dies nicht gelingt oder andere formale Fehler in der Rechnung sind (z.B. falsche MwSt.), wird er die Rechnung ablehnen.
+
+Das Prüfergebnis (positiv oder negativ) wird in der Variable formalCheckResult (true/false) gespeichert. Zudem wird in der Variable formalCheckComments die Begründung beschrieben, was nicht in Ordnung sei.
+
+Falls das Kostenstellenleiter-Kürzel noch fehlt (keine passende Bestellung), muss dieses von Hand gesetzt werden (costCenterMgr).</bpmn:documentation>
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="formalCheckResult" label="Prüfergebnis" type="boolean" />
+          <camunda:formField id="formalCheckComments" label="Begründung" type="string" />
+          <camunda:formField id="costCenterMgr" label="Kostenstellenleiter-Kürzel" type="string" />
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1cneye0</bpmn:incoming>
+      <bpmn:outgoing>Flow_00p9c7f</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="RechnungMateriellPrufenTask" name="Rechnung materiell prüfen" camunda:asyncAfter="true" camunda:assignee="${costCenterMgr}">
+      <bpmn:documentation>Aufgabe geht an den Benutzer mit dem Kürzel in costCenterMgr. Dieser prüft anhand der Rechnungsdatei, ob er alle aufgeführten Positionen in ausreichender Qualität erhalten hat.
+
+
+Das Prüfergebnis (positiv oder negativ) wird in der Variable materialCheckResult (true/false) gespeichert. Zudem wird in der Variable materialCheckComments eine Begründung beschrieben, was nicht in Ordnung sei.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="materialCheckResult" label="Prüfergebnis" type="boolean" />
+          <camunda:formField id="materialCheckComments" label="Begründung" type="string" />
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>CHF100SequenceFlow</bpmn:incoming>
+      <bpmn:outgoing>Flow_1hegwq0</bpmn:outgoing>
+    </bpmn:userTask>
   </bpmn:process>
   <bpmn:process id="Process_161542n" isExecutable="false">
     <bpmn:laneSet id="LaneSet_147l1z9">
@@ -572,10 +584,6 @@ if(invoiceAmount &lt; 100 &amp;&amp; invoiceAmount === orderAmount){
       <bpmndi:BPMNShape id="Lane_0s8cx8b_di" bpmnElement="SekretariatLane" isHorizontal="true" bioc:stroke="rgb(30, 136, 229)" bioc:fill="rgb(187, 222, 251)">
         <dc:Bounds x="310" y="500" width="2120" height="110" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_1aps01a_di" bpmnElement="Flow_1aps01a">
-        <di:waypoint x="520" y="590" />
-        <di:waypoint x="520" y="790" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0eafodb_di" bpmnElement="Flow_0eafodb">
         <di:waypoint x="1760" y="970" />
         <di:waypoint x="1802" y="970" />
@@ -701,16 +709,14 @@ if(invoiceAmount &lt; 100 &amp;&amp; invoiceAmount === orderAmount){
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1y33xl3_di" bpmnElement="Flow_1y33xl3">
         <di:waypoint x="398" y="550" />
-        <di:waypoint x="470" y="550" />
+        <di:waypoint x="520" y="550" />
+        <di:waypoint x="520" y="790" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_1tkqdr2_di" bpmnElement="RechnungErfasstStartEvent">
         <dc:Bounds x="362" y="532" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="336" y="575" width="88" height="14" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0irtass_di" bpmnElement="RechnungMateriellPrufenTask">
-        <dc:Bounds x="1490" y="630" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0b6c5qm_di" bpmnElement="ZugehorigeBestellungGefundenGateway" isMarkerVisible="true">
         <dc:Bounds x="625" y="805" width="50" height="50" />
@@ -757,9 +763,6 @@ if(invoiceAmount &lt; 100 &amp;&amp; invoiceAmount === orderAmount){
       <bpmndi:BPMNShape id="Gateway_1jw4fx0_di" bpmnElement="Gateway_1jw4fx0" isMarkerVisible="true">
         <dc:Bounds x="1775" y="805" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_16jtcg3_di" bpmnElement="RechnungFormellPrufenTask">
-        <dc:Bounds x="990" y="1070" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_10ld1xx_di" bpmnElement="Gateway_10ld1xx" isMarkerVisible="true">
         <dc:Bounds x="885" y="1085" width="50" height="50" />
       </bpmndi:BPMNShape>
@@ -781,14 +784,17 @@ if(invoiceAmount &lt; 100 &amp;&amp; invoiceAmount === orderAmount){
       <bpmndi:BPMNShape id="Activity_1k5dzl4_di" bpmnElement="Activity_1k5dzl4">
         <dc:Bounds x="1660" y="930" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1rcnpmh_di" bpmnElement="TempActivity">
-        <dc:Bounds x="470" y="510" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0fb2ciu_di" bpmnElement="DatenVonZugehorigerBestellungAuslesenTask">
         <dc:Bounds x="470" y="790" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0qfvl31_di" bpmnElement="RechnungAutomatischFormellPrufenTask">
         <dc:Bounds x="730" y="790" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0hfk4mn_di" bpmnElement="RechnungFormellPrufenTask">
+        <dc:Bounds x="990" y="1070" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1uwps0c_di" bpmnElement="RechnungMateriellPrufenTask">
+        <dc:Bounds x="1490" y="630" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Participant_0guif6x_di" bpmnElement="ERPParticipant" isHorizontal="true">
         <dc:Bounds x="280" y="372" width="300" height="60" />
@@ -857,6 +863,10 @@ if(invoiceAmount &lt; 100 &amp;&amp; invoiceAmount === orderAmount){
       <bpmndi:BPMNShape id="Lane_1u4wp5v_di" bpmnElement="ProzessportalLane2" isHorizontal="true">
         <dc:Bounds x="310" y="1250" width="2120" height="120" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_00lhdnv_di" bpmnElement="Flow_00lhdnv">
+        <di:waypoint x="1908" y="1436" />
+        <di:waypoint x="1992" y="1436" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0shhu5d_di" bpmnElement="Flow_0shhu5d">
         <di:waypoint x="1770" y="1600" />
         <di:waypoint x="1822" y="1600" />
@@ -975,10 +985,6 @@ if(invoiceAmount &lt; 100 &amp;&amp; invoiceAmount === orderAmount){
         <di:waypoint x="419" y="1310" />
         <di:waypoint x="450" y="1310" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_00lhdnv_di" bpmnElement="Flow_00lhdnv">
-        <di:waypoint x="1908" y="1436" />
-        <di:waypoint x="1992" y="1436" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Activity_0cq36vb_di" bpmnElement="RechnungOffnenTask1">
         <dc:Bounds x="450" y="1270" width="100" height="80" />
       </bpmndi:BPMNShape>
@@ -1042,12 +1048,6 @@ if(invoiceAmount &lt; 100 &amp;&amp; invoiceAmount === orderAmount){
           <dc:Bounds x="1926" y="1575" width="70" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1vg4nqz_di" bpmnElement="Event_1vg4nqz">
-        <dc:Bounds x="1992" y="1418" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1985" y="1461" width="51" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1gy7br4_di" bpmnElement="RechnungBezahlenSubProcess">
         <dc:Bounds x="2050" y="1510" width="100" height="80" />
       </bpmndi:BPMNShape>
@@ -1070,6 +1070,12 @@ if(invoiceAmount &lt; 100 &amp;&amp; invoiceAmount === orderAmount){
         <dc:Bounds x="1822" y="1582" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1815" y="1625" width="51" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1vg4nqz_di" bpmnElement="Event_1vg4nqz">
+        <dc:Bounds x="1992" y="1418" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1985" y="1461" width="51" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Participant_0m3t1tx_di" bpmnElement="LieferantParticipant" isHorizontal="true">
