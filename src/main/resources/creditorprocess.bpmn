@@ -102,7 +102,7 @@
         <bpmn:flowNodeRef>RechnungMateriellAbgelehntEndEvent</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Activity_1k5dzl4</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>DatenVonZugehorigerBestellungAuslesenTask</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>RechnungAutomatischFormellPrufenTask</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>InvoiceValidation</bpmn:flowNodeRef>
       </bpmn:lane>
       <bpmn:lane id="KreditorenbuchhaltungLane" name="Kreditorenbuchhaltung">
         <bpmn:flowNodeRef>Gateway_10ld1xx</bpmn:flowNodeRef>
@@ -201,10 +201,10 @@ PDF per FileUpload (invoiceFile)</bpmn:documentation>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_1hegwq0" sourceRef="RechnungMateriellPrufenTask" targetRef="MateriellesPrufergebnisGateway" />
     <bpmn:sequenceFlow id="Flow_0tbmtn1" sourceRef="DatenVonZugehorigerBestellungAuslesenTask" targetRef="ZugehorigeBestellungGefundenGateway" />
-    <bpmn:sequenceFlow id="JaSequenceFlow" name="Ja" sourceRef="ZugehorigeBestellungGefundenGateway" targetRef="RechnungAutomatischFormellPrufenTask">
+    <bpmn:sequenceFlow id="JaSequenceFlow" name="Ja" sourceRef="ZugehorigeBestellungGefundenGateway" targetRef="InvoiceValidation">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${orderFound}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_13frkl1" sourceRef="RechnungAutomatischFormellPrufenTask" targetRef="AutomatischesPrufergebnisGateway" />
+    <bpmn:sequenceFlow id="Flow_13frkl1" sourceRef="InvoiceValidation" targetRef="AutomatischesPrufergebnisGateway" />
     <bpmn:sequenceFlow id="PositivSequenceFlow1" name="Positiv" sourceRef="AutomatischesPrufergebnisGateway" targetRef="Gateway_1iqzvbr">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${formalCheckResult}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
@@ -260,27 +260,13 @@ Lieferantendaten:
         <camunda:inputOutput>
           <camunda:outputParameter name="orderFound">${true}</camunda:outputParameter>
           <camunda:outputParameter name="orderAmount">${80}</camunda:outputParameter>
+          <camunda:outputParameter name="creditorOrderCount">9</camunda:outputParameter>
+          <camunda:outputParameter name="creditorInvoiceReclamationCount">3</camunda:outputParameter>
         </camunda:inputOutput>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1y33xl3</bpmn:incoming>
       <bpmn:outgoing>Flow_0tbmtn1</bpmn:outgoing>
     </bpmn:task>
-    <bpmn:scriptTask id="RechnungAutomatischFormellPrufenTask" name="Rechnung automatisch formell prüfen" scriptFormat="JavaScript" camunda:resultVariable="formalCheckResult">
-      <bpmn:documentation>Prüfung basierend auf den Variablen:
-- invoiceAmount
-- Matching von invoiceAmount und orderAmount
-- creditorInvoiceReclamationCount
-- creditorOrderCount
-
-
-Das Ergebnis (automatische Prüfung positiv oder negativ) wird in der Variable formalCheckResult (true/false) gespeichert.</bpmn:documentation>
-      <bpmn:incoming>JaSequenceFlow</bpmn:incoming>
-      <bpmn:outgoing>Flow_13frkl1</bpmn:outgoing>
-      <bpmn:script>result = false;
-if(invoiceAmount &lt; 100 &amp;&amp; invoiceAmount === orderAmount){
- result = true;
-}</bpmn:script>
-    </bpmn:scriptTask>
     <bpmn:userTask id="RechnungFormellPrufenTask" name="Rechnung formell prüfen" camunda:asyncAfter="true" camunda:candidateGroups="kreditorenbuchhaltung">
       <bpmn:documentation>Mitarbeiter wird händisch im ERP nach einer passenden Bestellung suchen. Falls er keine findet, wird er z.B. versuchen, intern herauszufinden, wer der Auslöser dieser Rechnung ist. Falls auch dies nicht gelingt oder andere formale Fehler in der Rechnung sind (z.B. falsche MwSt.), wird er die Rechnung ablehnen.
 
@@ -311,6 +297,23 @@ Das Prüfergebnis (positiv oder negativ) wird in der Variable materialCheckResul
       <bpmn:incoming>CHF100SequenceFlow</bpmn:incoming>
       <bpmn:outgoing>Flow_1hegwq0</bpmn:outgoing>
     </bpmn:userTask>
+    <bpmn:businessRuleTask id="InvoiceValidation" name="Rechnung automatisch formell prüfen" camunda:asyncAfter="true" camunda:resultVariable="formalCheckResult" camunda:decisionRef="InvoiceValidation" camunda:mapDecisionResult="singleEntry">
+      <bpmn:documentation>Prüfung basierend auf den Variablen:
+- invoiceAmount
+- Matching von invoiceAmount und orderAmount
+- creditorInvoiceReclamationCount
+- creditorOrderCount
+
+
+Das Ergebnis (automatische Prüfung positiv oder negativ) wird in der Variable formalCheckResult (true/false) gespeichert.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="formalCheckResult">${decisionResult.getSingleEntry()}</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>JaSequenceFlow</bpmn:incoming>
+      <bpmn:outgoing>Flow_13frkl1</bpmn:outgoing>
+    </bpmn:businessRuleTask>
   </bpmn:process>
   <bpmn:process id="Process_161542n" isExecutable="false">
     <bpmn:laneSet id="LaneSet_147l1z9">
@@ -787,14 +790,14 @@ Das Prüfergebnis (positiv oder negativ) wird in der Variable materialCheckResul
       <bpmndi:BPMNShape id="Activity_0fb2ciu_di" bpmnElement="DatenVonZugehorigerBestellungAuslesenTask">
         <dc:Bounds x="470" y="790" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0qfvl31_di" bpmnElement="RechnungAutomatischFormellPrufenTask">
-        <dc:Bounds x="730" y="790" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0hfk4mn_di" bpmnElement="RechnungFormellPrufenTask">
         <dc:Bounds x="990" y="1070" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1uwps0c_di" bpmnElement="RechnungMateriellPrufenTask">
         <dc:Bounds x="1490" y="630" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0xr56kl_di" bpmnElement="InvoiceValidation">
+        <dc:Bounds x="730" y="790" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Participant_0guif6x_di" bpmnElement="ERPParticipant" isHorizontal="true">
         <dc:Bounds x="280" y="372" width="300" height="60" />

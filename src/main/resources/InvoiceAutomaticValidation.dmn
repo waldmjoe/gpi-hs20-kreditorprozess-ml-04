@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="Definitions_0cdvbn3" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="4.2.0">
+  <decision id="InvoiceValidation" name="Rechnungen automatisch prüfen">
+    <informationRequirement id="InformationRequirement_12gtkt7">
+      <requiredInput href="#InputData_0my9sza" />
+    </informationRequirement>
+    <informationRequirement id="InformationRequirement_1k3r5fb">
+      <requiredInput href="#InputData_0aoy466" />
+    </informationRequirement>
+    <informationRequirement id="InformationRequirement_0hizetd">
+      <requiredInput href="#InputData_18f5jf2" />
+    </informationRequirement>
+    <informationRequirement id="InformationRequirement_0jc63me">
+      <requiredInput href="#InputData_1l376f7" />
+    </informationRequirement>
+    <decisionTable id="DecisionTable_1nkfaja" hitPolicy="FIRST">
+      <input id="Input_1" label="Rechnungsbetrag" biodi:width="192">
+        <inputExpression id="InputExpression_1" typeRef="long">
+          <text>invoiceAmount</text>
+        </inputExpression>
+      </input>
+      <input id="InputClause_1sbsjek" label="Anzahl Bestellungen">
+        <inputExpression id="LiteralExpression_1jtrhef" typeRef="integer">
+          <text>creditorOrderCount</text>
+        </inputExpression>
+      </input>
+      <input id="InputClause_1ttoadd" label="Anzahl Reklamationen">
+        <inputExpression id="LiteralExpression_0cfgzp9" typeRef="integer">
+          <text>creditorInvoiceReclamationCount</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Prüfergebnis positiv?" name="formalCheckResult" typeRef="boolean" biodi:width="192" />
+      <rule id="DecisionRule_1gvl111">
+        <inputEntry id="UnaryTests_0dd6ur0">
+          <text>not(orderAmount)</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1nr26k9">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_06v22or">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0c1zfa3">
+          <text>false</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_01ywh2c">
+        <inputEntry id="UnaryTests_0d3o8pw">
+          <text>&gt; 100000</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_10ypehh">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_09ob51y">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1ndlxpu">
+          <text>false</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0hj2w07">
+        <inputEntry id="UnaryTests_1q8ho8c">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0if48bi">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_13fpzbv">
+          <text>&gt;0</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1nol514">
+          <text>false</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0g6qpwk">
+        <inputEntry id="UnaryTests_0c1qd2p">
+          <text>[1000..10000]</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0oxsoge">
+          <text>&lt;10</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1xr2cy5">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_15a84j4">
+          <text>false</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1frd2jo">
+        <inputEntry id="UnaryTests_0ckcxhf">
+          <text>[1000..10000]</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_121gjmv">
+          <text>&gt;10</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_19ojq95">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1ng42z2">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_04poyjo">
+        <inputEntry id="UnaryTests_1iz9nul">
+          <text>]100..1000[</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_05kzoss">
+          <text>&lt;5</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1ykgfzi">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1pe7wjk">
+          <text>false</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0bdsh47">
+        <inputEntry id="UnaryTests_1l1oeqm">
+          <text>]100..1000[</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0noet75">
+          <text>&gt;5</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0ft1bhm">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1mefqvy">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0a4qwsr">
+        <inputEntry id="UnaryTests_19gnz6h">
+          <text>&lt;= 100</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0hvtnny">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1fu7ydk">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1qre7pg">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData id="InputData_0my9sza" name="Anzahl Bestellungen" />
+  <inputData id="InputData_0aoy466" name="Rechnungsbetrag" />
+  <inputData id="InputData_18f5jf2" name="Bestellbetrag" />
+  <inputData id="InputData_1l376f7" name="Anzahl Reklamationen" />
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="InvoiceValidation">
+        <dc:Bounds height="80" width="180" x="420" y="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_01gtfcw" dmnElementRef="InputData_0my9sza">
+        <dc:Bounds height="45" width="125" x="157" y="267" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_06uivps" dmnElementRef="InputData_0aoy466">
+        <dc:Bounds height="45" width="125" x="357" y="267" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_0epvgah" dmnElementRef="InputData_18f5jf2">
+        <dc:Bounds height="45" width="125" x="577" y="267" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_1h56byt" dmnElementRef="InputData_1l376f7">
+        <dc:Bounds height="45" width="125" x="777" y="267" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="DMNEdge_1m4dpz5" dmnElementRef="InformationRequirement_12gtkt7">
+        <di:waypoint x="220" y="267" />
+        <di:waypoint x="456" y="180" />
+        <di:waypoint x="456" y="160" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="DMNEdge_1y2z8vk" dmnElementRef="InformationRequirement_1k3r5fb">
+        <di:waypoint x="420" y="267" />
+        <di:waypoint x="492" y="180" />
+        <di:waypoint x="492" y="160" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="DMNEdge_0mzy5b9" dmnElementRef="InformationRequirement_0hizetd">
+        <di:waypoint x="640" y="267" />
+        <di:waypoint x="528" y="180" />
+        <di:waypoint x="528" y="160" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="DMNEdge_05290th" dmnElementRef="InformationRequirement_0jc63me">
+        <di:waypoint x="840" y="267" />
+        <di:waypoint x="564" y="180" />
+        <di:waypoint x="564" y="160" />
+      </dmndi:DMNEdge>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
